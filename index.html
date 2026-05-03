@@ -382,7 +382,7 @@
         <span id="visitor-text">Loading…</span>
       </div>
     </div>
-    <h1>Final <em>exam</em><br>countdown</h1>
+    <h1>Final <em>exam💀</em><br>countdown</h1>
     <div class="clock-display" id="clock">—</div>
   </header>
 
@@ -399,13 +399,34 @@
 </div>
 
 <script>
-/* ── Visitor counter ─────────────────────────────────────────────────────────
-   Tries countapi.xyz first, falls back to counterapi.dev.
-   Both are free, no signup, work on static GitHub Pages sites.
-   Change COUNTER_NAMESPACE to something unique for your page.
-   ────────────────────────────────────────────────────────────────────────── */
-const COUNTER_NAMESPACE = "itcs-exam-countdown-2026"; // ← change this if you want
-const COUNTER_KEY       = "visits";
+/* ── Visitor counter (Supabase) ───────────────────────────────────────────
+   ONE-TIME SETUP (~5 minutes, free):
+
+   1. Go to https://supabase.com → sign up → New project (any name/region)
+
+   2. Once your project is ready, open the SQL Editor and run this:
+
+      CREATE TABLE counter (
+        id    text primary key,
+        count bigint default 0
+      );
+      INSERT INTO counter VALUES ('visits', 0);
+
+      CREATE OR REPLACE FUNCTION increment_counter(counter_id text)
+      RETURNS bigint LANGUAGE sql AS $$
+        UPDATE counter SET count = count + 1
+        WHERE id = counter_id RETURNING count;
+      $$;
+
+   3. Go to Settings → API and copy:
+      - "Project URL"       → paste into SUPABASE_URL below
+      - "anon / public" key → paste into SUPABASE_KEY below
+
+   That's it — the counter will work on any static host including GitHub Pages.
+   ───────────────────────────────────────────────────────────────────────── */
+
+const SUPABASE_URL = "https://adkaceonjiejvegtxjks.supabase.co"; // ← replace
+const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFka2FjZW9uamllanZlZ3R4amtzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc3OTY4MTUsImV4cCI6MjA5MzM3MjgxNX0.mwWTlhP0ThhtqH-CcyLOABR5hOreGrDHwAZOKA7MOcA";                        // ← replace
 
 function applyCount(count) {
   const el = document.getElementById("visitor-text");
@@ -415,31 +436,25 @@ function applyCount(count) {
 }
 
 async function loadVisitorCount() {
-  const apis = [
-    {
-      url:     `https://api.countapi.xyz/hit/${COUNTER_NAMESPACE}/${COUNTER_KEY}`,
-      extract: d => d.value
-    },
-    {
-      url:     `https://api.counterapi.dev/v1/${COUNTER_NAMESPACE}/${COUNTER_KEY}/up`,
-      extract: d => d.count ?? d.value
-    }
-  ];
-
-  for (const api of apis) {
-    try {
-      const res = await fetch(api.url);
-      if (!res.ok) continue;
-      const data  = await res.json();
-      const count = api.extract(data);
-      if (count != null) { applyCount(count); return; }
-    } catch { /* try next */ }
+  if (SUPABASE_URL.includes("YOUR_PROJECT_ID")) return; // not configured yet
+  try {
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/rpc/increment_counter`, {
+      method:  "POST",
+      headers: {
+        "apikey":        SUPABASE_KEY,
+        "Authorization": `Bearer ${SUPABASE_KEY}`,
+        "Content-Type":  "application/json"
+      },
+      body: JSON.stringify({ counter_id: "visits" })
+    });
+    if (!res.ok) throw new Error("Supabase error");
+    const count = await res.json();           // returns a single number
+    if (typeof count === "number") applyCount(count);
+  } catch {
+    document.getElementById("visitor-badge").style.display = "none";
+    const stat = document.getElementById("s-visits");
+    if (stat) stat.closest(".stat").style.display = "none";
   }
-
-  // All APIs failed — hide the badge cleanly
-  document.getElementById("visitor-badge").style.display = "none";
-  const stat = document.getElementById("s-visits");
-  if (stat) stat.closest(".stat").style.display = "none";
 }
 
 loadVisitorCount();
