@@ -180,6 +180,7 @@
   .stat-num.upcoming { color: var(--normal); }
   .stat-num.ongoing  { color: var(--now); }
   .stat-num.done     { color: var(--muted); }
+  .stat-num.visits   { color: var(--urgent); }
 
   .stat-label {
     font-size: 11px;
@@ -389,6 +390,7 @@
     <div class="stat"><div class="stat-num upcoming" id="s-upcoming">—</div><div class="stat-label">Upcoming</div></div>
     <div class="stat"><div class="stat-num ongoing"  id="s-ongoing">—</div><div class="stat-label">Ongoing</div></div>
     <div class="stat"><div class="stat-num done"     id="s-done">—</div><div class="stat-label">Completed</div></div>
+    <div class="stat"><div class="stat-num visits"   id="s-visits">—</div><div class="stat-label">Visitors</div></div>
   </div>
 
   <div class="cards" id="cards"></div>
@@ -414,6 +416,8 @@ async function loadVisitorCount() {
     if (count !== null) {
       const el = document.getElementById("visitor-text");
       el.innerHTML = `<span class="visitor-count">${count.toLocaleString()}</span>&nbsp;visit${count === 1 ? "" : "s"}`;
+      const stat = document.getElementById("s-visits");
+      if (stat) stat.textContent = count.toLocaleString();
     }
   } catch {
     document.getElementById("visitor-badge").style.display = "none";
