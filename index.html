@@ -76,6 +76,15 @@
     animation: fadeUp 0.9s ease both;
   }
 
+  .top-badges {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    margin-bottom: 24px;
+    flex-wrap: wrap;
+  }
+
   .live-badge {
     display: inline-flex;
     align-items: center;
@@ -89,7 +98,28 @@
     color: var(--soon);
     letter-spacing: 0.1em;
     text-transform: uppercase;
-    margin-bottom: 24px;
+  }
+
+  .visitor-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    background: rgba(123,140,222,0.08);
+    border: 1px solid rgba(123,140,222,0.18);
+    border-radius: 20px;
+    padding: 5px 13px;
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    color: var(--normal);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    transition: opacity 0.4s ease;
+  }
+
+  .visitor-icon {
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: var(--normal);
   }
 
   .live-dot {
@@ -319,6 +349,16 @@
     to   { opacity: 1; transform: translateY(0); }
   }
 
+  @keyframes countUp {
+    from { opacity: 0; transform: translateY(4px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  .visitor-count {
+    display: inline-block;
+    animation: countUp 0.5s ease both;
+  }
+
   @media (max-width: 640px) {
     .container { padding: 48px 16px 72px; }
     h1 { font-size: 48px; }
@@ -334,7 +374,13 @@
 
 <div class="container">
   <header class="header">
-    <div class="live-badge"><span class="live-dot"></span>Live</div>
+    <div class="top-badges">
+      <div class="live-badge"><span class="live-dot"></span>Live</div>
+      <div class="visitor-badge" id="visitor-badge">
+        <span class="visitor-icon"></span>
+        <span id="visitor-text">Loading…</span>
+      </div>
+    </div>
     <h1>Final <em>exam</em><br>countdown</h1>
     <div class="clock-display" id="clock">—</div>
   </header>
@@ -351,6 +397,32 @@
 </div>
 
 <script>
+/* ── Visitor counter ─────────────────────────────────────────────────────────
+   Uses CountAPI (counterapi.dev) — free, no signup, works on static hosts.
+   IMPORTANT: change the namespace below to something unique for your page
+   so you don't share a counter with someone else.
+   Format: countapi.dev/v1/{namespace}/{key}/up
+   ────────────────────────────────────────────────────────────────────────── */
+const COUNTER_NAMESPACE = "itcs-exam-countdown-2026"; // ← change this if you want
+const COUNTER_KEY       = "visits";
+
+async function loadVisitorCount() {
+  try {
+    const res  = await fetch(`https://api.counterapi.dev/v1/${COUNTER_NAMESPACE}/${COUNTER_KEY}/up`);
+    const data = await res.json();
+    const count = data.count ?? data.value ?? null;
+    if (count !== null) {
+      const el = document.getElementById("visitor-text");
+      el.innerHTML = `<span class="visitor-count">${count.toLocaleString()}</span>&nbsp;visit${count === 1 ? "" : "s"}`;
+    }
+  } catch {
+    document.getElementById("visitor-badge").style.display = "none";
+  }
+}
+
+loadVisitorCount();
+
+/* ── Exam data ───────────────────────────────────────────────────────────── */
 const exams = [
   { code:"ITGE275", name:"Economics",                                                   date:"2026-05-05", start:"15:00", end:"16:00" },
   { code:"ITCS225", name:"Principles of Operating Systems",                             date:"2026-05-06", start:"15:00", end:"17:00" },
