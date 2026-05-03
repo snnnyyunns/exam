@@ -366,6 +366,121 @@
     .cards { grid-template-columns: 1fr; }
     .stat-num { font-size: 32px; }
   }
+
+  /* ── Audio player ── */
+  .audio-player {
+    position: fixed;
+    bottom: 28px;
+    right: 28px;
+    z-index: 100;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 10px;
+  }
+
+  .audio-panel {
+    background: var(--surface);
+    border: 1px solid var(--border2);
+    border-radius: 20px;
+    padding: 14px 18px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    min-width: 200px;
+    opacity: 0;
+    transform: translateY(8px) scale(0.97);
+    pointer-events: none;
+    transition: opacity 0.2s ease, transform 0.2s ease;
+  }
+  .audio-panel.open {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+    pointer-events: all;
+  }
+
+  .audio-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+  }
+
+  .audio-label {
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    color: var(--muted);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  .audio-toggle {
+    width: 36px; height: 20px;
+    background: var(--surface2);
+    border-radius: 10px;
+    border: 1px solid var(--border2);
+    cursor: pointer;
+    position: relative;
+    transition: background 0.2s ease;
+    flex-shrink: 0;
+  }
+  .audio-toggle::after {
+    content: '';
+    position: absolute;
+    width: 14px; height: 14px;
+    border-radius: 50%;
+    background: var(--muted);
+    top: 2px; left: 2px;
+    transition: transform 0.2s ease, background 0.2s ease;
+  }
+  .audio-toggle.on { background: rgba(74,223,170,0.15); border-color: rgba(74,223,170,0.3); }
+  .audio-toggle.on::after { transform: translateX(16px); background: var(--soon); }
+
+  .volume-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .volume-row input[type=range] {
+    flex: 1;
+    -webkit-appearance: none;
+    height: 2px;
+    background: var(--surface2);
+    border-radius: 2px;
+    outline: none;
+    cursor: pointer;
+  }
+  .volume-row input[type=range]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 12px; height: 12px;
+    border-radius: 50%;
+    background: var(--normal);
+    cursor: pointer;
+  }
+
+  .audio-fab {
+    width: 48px; height: 48px;
+    border-radius: 50%;
+    background: var(--surface);
+    border: 1px solid var(--border2);
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    transition: border-color 0.2s ease, transform 0.15s ease;
+    flex-shrink: 0;
+  }
+  .audio-fab:hover { border-color: rgba(255,255,255,0.25); transform: scale(1.05); }
+  .audio-fab svg { width: 18px; height: 18px; }
+
+  .audio-divider {
+    height: 1px;
+    background: var(--border);
+    margin: 0 -2px;
+  }
+
+  @media (max-width: 640px) {
+    .audio-player { bottom: 16px; right: 16px; }
+    .audio-panel { min-width: 170px; }
+  }
 </style>
 </head>
 <body>
@@ -382,7 +497,7 @@
         <span id="visitor-text">Loading…</span>
       </div>
     </div>
-    <h1>Final <em>exam💀</em><br>countdown</h1>
+    <h1>Final <em>exam</em><br>countdown</h1>
     <div class="clock-display" id="clock">—</div>
   </header>
 
@@ -396,6 +511,55 @@
   <div class="cards" id="cards"></div>
 
   <footer class="footer">Ticks every second &nbsp;·&nbsp; Times shown in your local timezone</footer>
+</div>
+
+<!-- ── Audio player ─────────────────────────────────────────────── -->
+<!--
+  Put your audio files in an "audio/" folder in your GitHub repo:
+    audio/music.mp3   ← background music (will loop)
+    audio/tick.mp3    ← short tick sound (~0.1s click/beep)
+    audio/alarm.mp3   ← plays once when an exam becomes "Due today"
+-->
+<audio id="bg-music" src="audio/music.mp3" preload="auto"></audio>
+<audio id="sfx-tick"  src="audio/tick.mp3"  preload="auto"></audio>
+<audio id="sfx-alarm" src="audio/alarm.mp3" preload="auto"></audio>
+
+<div class="audio-player">
+  <div class="audio-panel" id="audio-panel">
+
+    <div class="audio-row">
+      <span class="audio-label">Music</span>
+      <div class="audio-toggle" id="toggle-music" title="Toggle background music"></div>
+    </div>
+
+    <div class="volume-row">
+      <span class="audio-label" style="flex-shrink:0">Vol</span>
+      <input type="range" id="vol-music" min="0" max="100" value="40">
+    </div>
+
+    <div class="audio-divider"></div>
+
+    <div class="audio-row">
+      <span class="audio-label">Tick</span>
+      <div class="audio-toggle" id="toggle-tick" title="Toggle tick sound every second"></div>
+    </div>
+
+    <div class="audio-divider"></div>
+
+    <div class="audio-row">
+      <span class="audio-label">Alarm</span>
+      <div class="audio-toggle on" id="toggle-alarm" title="Play alarm when exam is due today"></div>
+    </div>
+
+  </div>
+
+  <div class="audio-fab" id="audio-fab" title="Audio settings">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+      <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5" opacity="0.9"/>
+      <path d="M15.54 8.46a5 5 0 0 1 0 7.07" id="wave-1"/>
+      <path d="M19.07 4.93a10 10 0 0 1 0 14.14" id="wave-2"/>
+    </svg>
+  </div>
 </div>
 
 <script>
@@ -425,8 +589,8 @@
    That's it — the counter will work on any static host including GitHub Pages.
    ───────────────────────────────────────────────────────────────────────── */
 
-const SUPABASE_URL = "https://adkaceonjiejvegtxjks.supabase.co"; // ← replace
-const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFka2FjZW9uamllanZlZ3R4amtzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc3OTY4MTUsImV4cCI6MjA5MzM3MjgxNX0.mwWTlhP0ThhtqH-CcyLOABR5hOreGrDHwAZOKA7MOcA";                        // ← replace
+const SUPABASE_URL = "https://YOUR_PROJECT_ID.supabase.co"; // ← replace
+const SUPABASE_KEY = "YOUR_ANON_KEY";                        // ← replace
 
 function applyCount(count) {
   const el = document.getElementById("visitor-text");
@@ -568,6 +732,118 @@ function tick() {
 buildCards();
 tick();
 setInterval(tick, 1000);
+
+/* ── Audio ───────────────────────────────────────────────────────── */
+const music      = document.getElementById("bg-music");
+const sfxTick    = document.getElementById("sfx-tick");
+const sfxAlarm   = document.getElementById("sfx-alarm");
+const fab        = document.getElementById("audio-fab");
+const panel      = document.getElementById("audio-panel");
+const btnMusic   = document.getElementById("toggle-music");
+const btnTick    = document.getElementById("toggle-tick");
+const btnAlarm   = document.getElementById("toggle-alarm");
+const volMusic   = document.getElementById("vol-music");
+
+let musicOn  = false;
+let tickOn   = false;
+let alarmOn  = true;
+let panelOpen = false;
+const alarmFired = new Set(); // tracks which exams have already alarmed
+
+// Panel open/close
+fab.addEventListener("click", () => {
+  panelOpen = !panelOpen;
+  panel.classList.toggle("open", panelOpen);
+});
+document.addEventListener("click", e => {
+  if (panelOpen && !fab.contains(e.target) && !panel.contains(e.target)) {
+    panelOpen = false;
+    panel.classList.remove("open");
+  }
+});
+
+// Music toggle
+btnMusic.addEventListener("click", () => {
+  musicOn = !musicOn;
+  btnMusic.classList.toggle("on", musicOn);
+  if (musicOn) {
+    music.volume = volMusic.value / 100;
+    music.play().catch(() => {});
+    updateFabIcon(true);
+  } else {
+    music.pause();
+    if (!tickOn) updateFabIcon(false);
+  }
+});
+
+// Volume
+volMusic.addEventListener("input", () => {
+  music.volume = volMusic.value / 100;
+});
+
+// Tick toggle
+btnTick.addEventListener("click", () => {
+  tickOn = !tickOn;
+  btnTick.classList.toggle("on", tickOn);
+  if (tickOn) updateFabIcon(true);
+  else if (!musicOn) updateFabIcon(false);
+});
+
+// Alarm toggle
+btnAlarm.addEventListener("click", () => {
+  alarmOn = !alarmOn;
+  btnAlarm.classList.toggle("on", alarmOn);
+});
+
+// Play tick each second (hooked into existing setInterval)
+const _origTick = tick;
+function tickWithAudio() {
+  _origTick();
+
+  // Tick SFX
+  if (tickOn) {
+    const t = sfxTick.cloneNode();
+    t.volume = 0.35;
+    t.play().catch(() => {});
+  }
+
+  // Alarm SFX — fires once per exam when it enters "Due today" state
+  if (alarmOn) {
+    const now = new Date();
+    exams.forEach((exam, i) => {
+      const s    = toDate(exam.date, exam.start);
+      const en   = toDate(exam.date, exam.end);
+      const diff = s - now;
+      const days = diff / 864e5;
+      const isDue = diff > 0 && days < 1;
+      if (isDue && !alarmFired.has(i)) {
+        alarmFired.add(i);
+        sfxAlarm.currentTime = 0;
+        sfxAlarm.play().catch(() => {});
+      }
+    });
+  }
+}
+
+// Replace the interval with the audio-aware version
+clearInterval(window._tickInterval);
+window._tickInterval = setInterval(tickWithAudio, 1000);
+
+// FAB icon: muted vs active
+function updateFabIcon(active) {
+  const w1 = document.getElementById("wave-1");
+  const w2 = document.getElementById("wave-2");
+  if (active) {
+    w1.style.opacity = "1";
+    w2.style.opacity = "1";
+    fab.style.borderColor = "rgba(74,223,170,0.35)";
+  } else {
+    w1.style.opacity = "0.2";
+    w2.style.opacity = "0.2";
+    fab.style.borderColor = "";
+  }
+}
+updateFabIcon(false);
 </script>
 </body>
 </html>
