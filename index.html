@@ -400,28 +400,46 @@
 
 <script>
 /* ── Visitor counter ─────────────────────────────────────────────────────────
-   Uses CountAPI (counterapi.dev) — free, no signup, works on static hosts.
-   IMPORTANT: change the namespace below to something unique for your page
-   so you don't share a counter with someone else.
-   Format: countapi.dev/v1/{namespace}/{key}/up
+   Tries countapi.xyz first, falls back to counterapi.dev.
+   Both are free, no signup, work on static GitHub Pages sites.
+   Change COUNTER_NAMESPACE to something unique for your page.
    ────────────────────────────────────────────────────────────────────────── */
 const COUNTER_NAMESPACE = "itcs-exam-countdown-2026"; // ← change this if you want
 const COUNTER_KEY       = "visits";
 
+function applyCount(count) {
+  const el = document.getElementById("visitor-text");
+  el.innerHTML = `<span class="visitor-count">${count.toLocaleString()}</span>&nbsp;visit${count === 1 ? "" : "s"}`;
+  const stat = document.getElementById("s-visits");
+  if (stat) stat.textContent = count.toLocaleString();
+}
+
 async function loadVisitorCount() {
-  try {
-    const res  = await fetch(`https://api.counterapi.dev/v1/${COUNTER_NAMESPACE}/${COUNTER_KEY}/up`);
-    const data = await res.json();
-    const count = data.count ?? data.value ?? null;
-    if (count !== null) {
-      const el = document.getElementById("visitor-text");
-      el.innerHTML = `<span class="visitor-count">${count.toLocaleString()}</span>&nbsp;visit${count === 1 ? "" : "s"}`;
-      const stat = document.getElementById("s-visits");
-      if (stat) stat.textContent = count.toLocaleString();
+  const apis = [
+    {
+      url:     `https://api.countapi.xyz/hit/${COUNTER_NAMESPACE}/${COUNTER_KEY}`,
+      extract: d => d.value
+    },
+    {
+      url:     `https://api.counterapi.dev/v1/${COUNTER_NAMESPACE}/${COUNTER_KEY}/up`,
+      extract: d => d.count ?? d.value
     }
-  } catch {
-    document.getElementById("visitor-badge").style.display = "none";
+  ];
+
+  for (const api of apis) {
+    try {
+      const res = await fetch(api.url);
+      if (!res.ok) continue;
+      const data  = await res.json();
+      const count = api.extract(data);
+      if (count != null) { applyCount(count); return; }
+    } catch { /* try next */ }
   }
+
+  // All APIs failed — hide the badge cleanly
+  document.getElementById("visitor-badge").style.display = "none";
+  const stat = document.getElementById("s-visits");
+  if (stat) stat.closest(".stat").style.display = "none";
 }
 
 loadVisitorCount();
