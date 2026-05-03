@@ -1,0 +1,464 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Final Exam Countdown</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Mono:wght@400;500&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0a0a0f;
+    --surface: #13131a;
+    --surface2: #1c1c27;
+    --border: rgba(255,255,255,0.07);
+    --border2: rgba(255,255,255,0.12);
+    --text: #f0efe8;
+    --muted: #6b6a7a;
+    --subtle: #3a3a4a;
+    --urgent: #ff6b4a;
+    --urgent-bg: rgba(255,107,74,0.1);
+    --soon: #4adfaa;
+    --soon-bg: rgba(74,223,170,0.08);
+    --normal: #7b8cde;
+    --normal-bg: rgba(123,140,222,0.08);
+    --done-bg: rgba(58,58,74,0.3);
+    --now: #f5c842;
+    --now-bg: rgba(245,200,66,0.1);
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(255,255,255,0.018) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255,255,255,0.018) 1px, transparent 1px);
+    background-size: 64px 64px;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .orb {
+    position: fixed;
+    border-radius: 50%;
+    filter: blur(120px);
+    opacity: 0.12;
+    pointer-events: none;
+    z-index: 0;
+  }
+  .orb-1 { width: 700px; height: 700px; background: #4a3fff; top: -250px; left: -200px; }
+  .orb-2 { width: 450px; height: 450px; background: #ff4a6b; bottom: -150px; right: -100px; }
+  .orb-3 { width: 350px; height: 350px; background: #4adfaa; top: 45%; right: 5%; }
+
+  .container {
+    position: relative;
+    z-index: 1;
+    max-width: 1120px;
+    margin: 0 auto;
+    padding: 72px 28px 100px;
+  }
+
+  .header {
+    text-align: center;
+    margin-bottom: 64px;
+    animation: fadeUp 0.9s ease both;
+  }
+
+  .live-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    background: rgba(74,223,170,0.08);
+    border: 1px solid rgba(74,223,170,0.18);
+    border-radius: 20px;
+    padding: 5px 13px;
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    color: var(--soon);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    margin-bottom: 24px;
+  }
+
+  .live-dot {
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: var(--soon);
+    animation: blink 2s ease infinite;
+  }
+
+  @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.15} }
+
+  h1 {
+    font-family: 'DM Serif Display', serif;
+    font-size: clamp(44px, 8vw, 80px);
+    font-weight: 400;
+    line-height: 0.95;
+    letter-spacing: -0.025em;
+    margin-bottom: 16px;
+  }
+
+  h1 em {
+    font-style: italic;
+    color: transparent;
+    -webkit-text-stroke: 1.5px rgba(240,239,232,0.35);
+  }
+
+  .clock-display {
+    font-family: 'DM Mono', monospace;
+    font-size: 13px;
+    color: var(--muted);
+    letter-spacing: 0.04em;
+  }
+
+  .stats {
+    display: flex;
+    gap: 1px;
+    background: var(--border);
+    border-radius: 18px;
+    overflow: hidden;
+    margin-bottom: 52px;
+    border: 1px solid var(--border);
+    animation: fadeUp 0.9s 0.1s ease both;
+  }
+
+  .stat {
+    flex: 1;
+    padding: 22px 16px;
+    background: var(--surface);
+    text-align: center;
+  }
+
+  .stat-num {
+    font-family: 'DM Serif Display', serif;
+    font-size: 40px;
+    line-height: 1;
+    margin-bottom: 5px;
+  }
+  .stat-num.upcoming { color: var(--normal); }
+  .stat-num.ongoing  { color: var(--now); }
+  .stat-num.done     { color: var(--muted); }
+
+  .stat-label {
+    font-size: 11px;
+    color: var(--muted);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    font-family: 'DM Mono', monospace;
+  }
+
+  .cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(310px, 1fr));
+    gap: 16px;
+  }
+
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 22px;
+    overflow: hidden;
+    transition: border-color 0.3s ease, transform 0.25s ease;
+    animation: fadeUp 0.7s ease both;
+  }
+
+  .card:hover { border-color: var(--border2); transform: translateY(-3px); }
+  .card.is-urgent { border-color: rgba(255,107,74,0.22); }
+  .card.is-soon   { border-color: rgba(74,223,170,0.14); }
+  .card.is-done   { opacity: 0.45; }
+
+  .card:nth-child(1) { animation-delay: 0.06s }
+  .card:nth-child(2) { animation-delay: 0.12s }
+  .card:nth-child(3) { animation-delay: 0.18s }
+  .card:nth-child(4) { animation-delay: 0.24s }
+  .card:nth-child(5) { animation-delay: 0.30s }
+  .card:nth-child(6) { animation-delay: 0.36s }
+
+  .card-header {
+    padding: 22px 22px 18px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.1em;
+    padding: 4px 11px;
+    border-radius: 20px;
+    margin-bottom: 14px;
+    text-transform: uppercase;
+  }
+  .pill-dot { width: 4px; height: 4px; border-radius: 50%; background: currentColor; }
+
+  .pill.urgent { background: var(--urgent-bg); color: var(--urgent); border: 1px solid rgba(255,107,74,0.22); }
+  .pill.soon   { background: var(--soon-bg);   color: var(--soon);   border: 1px solid rgba(74,223,170,0.2); }
+  .pill.normal { background: var(--normal-bg); color: var(--normal); border: 1px solid rgba(123,140,222,0.2); }
+  .pill.done-p { background: var(--done-bg);   color: var(--muted);  border: 1px solid var(--border); }
+  .pill.now-p  { background: var(--now-bg);    color: var(--now);    border: 1px solid rgba(245,200,66,0.2); }
+  .pill.now-p .pill-dot { animation: blink 1s ease infinite; }
+
+  .card-code {
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    color: var(--muted);
+    margin-bottom: 5px;
+    letter-spacing: 0.06em;
+  }
+
+  .card-name {
+    font-size: 15px;
+    font-weight: 400;
+    color: var(--text);
+    line-height: 1.45;
+    min-height: 44px;
+  }
+
+  .card-body { padding: 18px 22px 22px; }
+
+  .progress-track {
+    height: 2px;
+    background: var(--surface2);
+    border-radius: 2px;
+    margin-bottom: 16px;
+    overflow: hidden;
+  }
+  .progress-fill { height: 100%; border-radius: 2px; transition: width 1s linear; }
+
+  .countdown {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 8px;
+    margin-bottom: 16px;
+  }
+
+  .cd-unit {
+    background: var(--surface2);
+    border-radius: 12px;
+    padding: 12px 6px 10px;
+    text-align: center;
+  }
+
+  .cd-val {
+    display: block;
+    font-family: 'DM Mono', monospace;
+    font-size: 24px;
+    font-weight: 500;
+    line-height: 1;
+    margin-bottom: 5px;
+    letter-spacing: -0.01em;
+    font-variant-numeric: tabular-nums;
+  }
+  .cd-lbl {
+    display: block;
+    font-size: 9px;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+  }
+  .cd-unit.urgent-u .cd-val { color: var(--urgent); }
+  .cd-unit.soon-u   .cd-val { color: var(--soon); }
+  .cd-unit.normal-u .cd-val { color: var(--normal); }
+
+  .card-meta {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    color: var(--muted);
+  }
+  .meta-sep { color: var(--subtle); }
+
+  .done-state {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 0 14px;
+  }
+  .done-check {
+    width: 30px; height: 30px;
+    border-radius: 50%;
+    background: var(--surface2);
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+  }
+  .done-check svg { width: 13px; height: 13px; }
+  .done-text { font-size: 13px; color: var(--muted); }
+
+  .ongoing-state { padding: 6px 0 14px; text-align: center; }
+  .ongoing-time  { font-family: 'DM Serif Display', serif; font-size: 36px; color: var(--now); margin-bottom: 5px; }
+  .ongoing-sub   { font-size: 11px; color: var(--muted); font-family: 'DM Mono', monospace; letter-spacing: 0.07em; }
+
+  .footer {
+    text-align: center;
+    margin-top: 72px;
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    color: var(--subtle);
+    letter-spacing: 0.07em;
+    animation: fadeUp 0.9s 0.5s ease both;
+  }
+
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(24px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  @media (max-width: 640px) {
+    .container { padding: 48px 16px 72px; }
+    h1 { font-size: 48px; }
+    .cards { grid-template-columns: 1fr; }
+    .stat-num { font-size: 32px; }
+  }
+</style>
+</head>
+<body>
+<div class="orb orb-1"></div>
+<div class="orb orb-2"></div>
+<div class="orb orb-3"></div>
+
+<div class="container">
+  <header class="header">
+    <div class="live-badge"><span class="live-dot"></span>Live</div>
+    <h1>Final <em>exam</em><br>countdown</h1>
+    <div class="clock-display" id="clock">—</div>
+  </header>
+
+  <div class="stats">
+    <div class="stat"><div class="stat-num upcoming" id="s-upcoming">—</div><div class="stat-label">Upcoming</div></div>
+    <div class="stat"><div class="stat-num ongoing"  id="s-ongoing">—</div><div class="stat-label">Ongoing</div></div>
+    <div class="stat"><div class="stat-num done"     id="s-done">—</div><div class="stat-label">Completed</div></div>
+  </div>
+
+  <div class="cards" id="cards"></div>
+
+  <footer class="footer">Ticks every second &nbsp;·&nbsp; Times shown in your local timezone</footer>
+</div>
+
+<script>
+const exams = [
+  { code:"ITGE275", name:"Economics",                                                   date:"2026-05-05", start:"15:00", end:"16:00" },
+  { code:"ITCS225", name:"Principles of Operating Systems",                             date:"2026-05-06", start:"15:00", end:"17:00" },
+  { code:"ITCS224", name:"Fundamentals of Information Systems & Software Development",  date:"2026-05-07", start:"15:00", end:"17:00" },
+  { code:"ITCS227", name:"Introduction to Data Science",                                date:"2026-05-08", start:"15:00", end:"17:00" },
+  { code:"ITCS226", name:"Introduction to Computer Network",                            date:"2026-05-11", start:"15:00", end:"17:00" },
+  { code:"ITCS223", name:"Introduction to Web Development",                             date:"2026-05-14", start:"15:00", end:"16:30" },
+];
+
+function toDate(d, t) {
+  const [y,mo,day]=d.split("-").map(Number), [h,mn]=t.split(":").map(Number);
+  return new Date(y,mo-1,day,h,mn,0);
+}
+function pad(n){return String(n).padStart(2,"0")}
+
+function buildCards() {
+  const c = document.getElementById("cards");
+  exams.forEach((_,i) => {
+    const el = document.createElement("div");
+    el.className = "card";
+    el.id = "card-"+i;
+    el.innerHTML = `
+      <div class="card-header">
+        <div class="pill" id="pill-${i}"><span class="pill-dot"></span><span id="pt-${i}"></span></div>
+        <div class="card-code">${exams[i].code}</div>
+        <div class="card-name">${exams[i].name}</div>
+      </div>
+      <div class="card-body" id="body-${i}"></div>`;
+    c.appendChild(el);
+  });
+}
+
+function tick() {
+  const now = new Date();
+  document.getElementById("clock").textContent =
+    now.toLocaleDateString("en-GB",{weekday:"long",day:"numeric",month:"long",year:"numeric"}) +
+    "  ·  " + now.toLocaleTimeString("en-GB");
+
+  let upcoming=0, ongoing=0, done=0;
+  exams.forEach(e => {
+    const s=toDate(e.date,e.start), en=toDate(e.date,e.end);
+    if(now>en) done++; else if(now>=s) ongoing++; else upcoming++;
+  });
+  document.getElementById("s-upcoming").textContent = upcoming;
+  document.getElementById("s-ongoing").textContent  = ongoing;
+  document.getElementById("s-done").textContent     = done;
+
+  exams.forEach((exam,i) => {
+    const s=toDate(exam.date,exam.start), en=toDate(exam.date,exam.end);
+    const diff=s-now;
+    const isDone=now>en, isNow=now>=s&&now<=en;
+    const days=diff/(864e5);
+
+    const card  = document.getElementById("card-"+i);
+    const pill  = document.getElementById("pill-"+i);
+    const pt    = document.getElementById("pt-"+i);
+    const body  = document.getElementById("body-"+i);
+
+    card.className = "card" + (isDone?" is-done": isNow?"": days<1?" is-urgent": days<3?" is-soon":"");
+
+    if(isDone)        { pill.className="pill done-p"; pt.textContent="Completed"; }
+    else if(isNow)    { pill.className="pill now-p";  pt.textContent="In progress"; }
+    else if(days<1)   { pill.className="pill urgent"; pt.textContent="Due today"; }
+    else if(days<3)   { pill.className="pill soon";   pt.textContent="Coming soon"; }
+    else              { pill.className="pill normal";  pt.textContent="Scheduled"; }
+
+    const dateStr = s.toLocaleDateString("en-GB",{weekday:"short",day:"numeric",month:"short"});
+
+    if(isDone) {
+      body.innerHTML=`
+        <div class="done-state">
+          <div class="done-check"><svg viewBox="0 0 13 13" fill="none"><path d="M2 7L5 10L11 3.5" stroke="#6b6a7a" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+          <div class="done-text">Exam finished — you survived.</div>
+        </div>
+        <div class="card-meta">${dateStr}<span class="meta-sep">/</span>${exam.start} – ${exam.end}</div>`;
+    } else if(isNow) {
+      const rem=en-now, rm=Math.floor(rem/60000), rs=Math.floor((rem%60000)/1000);
+      const pct=Math.round(((now-s)/(en-s))*100);
+      body.innerHTML=`
+        <div class="progress-track"><div class="progress-fill" style="width:${pct}%;background:var(--now)"></div></div>
+        <div class="ongoing-state">
+          <div class="ongoing-time">${rm}m ${pad(rs)}s</div>
+          <div class="ongoing-sub">remaining &nbsp;·&nbsp; ${pct}% through</div>
+        </div>
+        <div class="card-meta">${dateStr}<span class="meta-sep">/</span>${exam.start} – ${exam.end}</div>`;
+    } else {
+      const total=Math.floor(diff/1000);
+      const d=Math.floor(total/86400), h=Math.floor((total%86400)/3600);
+      const m=Math.floor((total%3600)/60), sc=total%60;
+      const uc = days<1?"urgent-u": days<3?"soon-u":"normal-u";
+      const fc = days<1?"var(--urgent)": days<3?"var(--soon)":"var(--normal)";
+      const pct = Math.max(2,Math.min(97,Math.round((1-(diff/(14*864e5)))*100)));
+      body.innerHTML=`
+        <div class="progress-track"><div class="progress-fill" style="width:${pct}%;background:${fc}"></div></div>
+        <div class="countdown">
+          <div class="cd-unit ${uc}"><span class="cd-val">${d}</span><span class="cd-lbl">days</span></div>
+          <div class="cd-unit ${uc}"><span class="cd-val">${pad(h)}</span><span class="cd-lbl">hrs</span></div>
+          <div class="cd-unit ${uc}"><span class="cd-val">${pad(m)}</span><span class="cd-lbl">min</span></div>
+          <div class="cd-unit ${uc}"><span class="cd-val">${pad(sc)}</span><span class="cd-lbl">sec</span></div>
+        </div>
+        <div class="card-meta">${dateStr}<span class="meta-sep">/</span>${exam.start} – ${exam.end}</div>`;
+    }
+  });
+}
+
+buildCards();
+tick();
+setInterval(tick, 1000);
+</script>
+</body>
+</html>
